@@ -15,7 +15,7 @@ var Menu = []workers.Pedido{
 		TempoGrelha:   8 * time.Second,
 		TempoMontagem: 2 * time.Second,
 		TempoBebida:   0,
-		Status:        "Iniciado",
+		Cancelamento:  make(chan struct{}), // Canal de cancelamento inicializado
 	},
 	{
 		Nome:          "Null-Burguer",
@@ -23,7 +23,7 @@ var Menu = []workers.Pedido{
 		TempoGrelha:   7 * time.Second,
 		TempoMontagem: 2 * time.Second,
 		TempoBebida:   0,
-		Status:        "Iniciado",
+		Cancelamento:  make(chan struct{}),
 	},
 	{
 		Nome:          "Crispy Turing",
@@ -31,7 +31,7 @@ var Menu = []workers.Pedido{
 		TempoGrelha:   10 * time.Second,
 		TempoMontagem: 1 * time.Second,
 		TempoBebida:   0,
-		Status:        "Iniciado",
+		Cancelamento:  make(chan struct{}),
 	},
 	{
 		Nome:          "Mongo Melt",
@@ -39,7 +39,7 @@ var Menu = []workers.Pedido{
 		TempoGrelha:   3 * time.Second,
 		TempoMontagem: 0,
 		TempoBebida:   0,
-		Status:        "Iniciado",
+		Cancelamento:  make(chan struct{}),
 	},
 	{
 		Nome:          "Float Juice",
@@ -47,7 +47,7 @@ var Menu = []workers.Pedido{
 		TempoGrelha:   0,
 		TempoMontagem: 0,
 		TempoBebida:   3 * time.Second,
-		Status:        "Iniciado",
+		Cancelamento:  make(chan struct{}),
 	},
 	{
 		Nome:          "Async Berry",
@@ -55,7 +55,7 @@ var Menu = []workers.Pedido{
 		TempoGrelha:   0,
 		TempoMontagem: 0,
 		TempoBebida:   2 * time.Second,
-		Status:        "Iniciado",
+		Cancelamento:  make(chan struct{}),
 	},
 }
 
@@ -84,7 +84,8 @@ func DispatchPedidos(wg *sync.WaitGroup) {
 			etapas++
 		}
 
-		wg.Add(etapas)
+		pedido.QuantidadeTarefas = etapas
+		wg.Add(pedido.QuantidadeTarefas)
 
 		fmt.Printf("Novo pedido recebido: %s\n", pedido.Nome)
 
@@ -99,4 +100,24 @@ func DispatchPedidos(wg *sync.WaitGroup) {
 		}
 	}
 }
+
+func CancelarPedido(nomePedido string) {
+	for i := range Menu {
+		if Menu[i].Nome == nomePedido {
+			close(Menu[i].Cancelamento)  // Sinaliza o cancelamento
+			fmt.Printf("%sPedido %s foi cancelado.%s\n", Vermelho, nomePedido, Branco)
+			return
+		}
+	}
+	fmt.Printf("%sPedido %s não encontrado.%s\n", Vermelho, nomePedido, Branco)
+}
+
+const (
+	Branco   = "\033[0m"
+	Vermelho = "\033[31m"
+	Verde    = "\033[32m"
+	Amarelo  = "\033[33m"
+	Rosa     = "\033[35m"
+	Ciana    = "\033[36m"
+)
 
