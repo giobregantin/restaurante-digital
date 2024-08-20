@@ -15,7 +15,7 @@ var Menu = []workers.Pedido{
 		TempoGrelha:   8 * time.Second,
 		TempoMontagem: 2 * time.Second,
 		TempoBebida:   0,
-		Cancelamento:  make(chan struct{}), // Canal de cancelamento inicializado
+		Cancelamento:  make(chan struct{}),
 	},
 	{
 		Nome:          "Null-Burguer",
@@ -67,10 +67,9 @@ func StartWorkers(wg *sync.WaitGroup) {
 }
 
 func DispatchPedidos(wg *sync.WaitGroup) {
-	for _, pedido := range Menu {
+	for i, pedido := range Menu {
 		etapas := 0
 
-		// Contabiliza as etapas que precisam ser realizadas
 		if pedido.TempoCorte > 0 {
 			etapas++
 		}
@@ -84,10 +83,14 @@ func DispatchPedidos(wg *sync.WaitGroup) {
 			etapas++
 		}
 
-		pedido.QuantidadeTarefas = etapas
-		wg.Add(pedido.QuantidadeTarefas)
+		tempoEstimado := CalcularTempoEstimado(i)
 
-		fmt.Printf("Novo pedido recebido: %s\n", pedido.Nome)
+		pedido.QuantidadeTarefas = etapas
+		pedido.TempoEstimado = tempoEstimado
+		Menu[i] = pedido
+
+		wg.Add(pedido.QuantidadeTarefas)
+		fmt.Printf("Novo pedido recebido: %s (Tempo estimado: %v)\n", pedido.Nome, pedido.TempoEstimado)
 
 		if pedido.TempoCorte > 0 {
 			workers.CortarWorker.Tarefas <- pedido
@@ -101,10 +104,50 @@ func DispatchPedidos(wg *sync.WaitGroup) {
 	}
 }
 
+
+func CalcularTempoEstimado(index int) time.Duration {
+	tempoEstimado := time.Duration(0)
+
+	for j := 0; j < index; j++ {
+		pedidoAnterior := Menu[j]
+		pedidoAtual := Menu[index]
+
+		if pedidoAnterior.TempoCorte > 0 && pedidoAtual.TempoCorte > 0 {
+			tempoEstimado += pedidoAnterior.TempoCorte
+		}
+		if pedidoAnterior.TempoGrelha > 0 && pedidoAtual.TempoGrelha > 0 {
+			tempoEstimado += pedidoAnterior.TempoGrelha
+		}
+		if pedidoAnterior.TempoMontagem > 0 && pedidoAtual.TempoMontagem > 0 {
+			tempoEstimado += pedidoAnterior.TempoMontagem
+		}
+		if pedidoAnterior.TempoBebida > 0 && pedidoAtual.TempoBebida > 0 {
+			tempoEstimado += pedidoAnterior.TempoBebida
+		}
+	}
+
+	pedidoAtual := Menu[index]
+	if pedidoAtual.TempoCorte > 0 {
+		tempoEstimado += pedidoAtual.TempoCorte
+	}
+	if pedidoAtual.TempoGrelha > 0 {
+		tempoEstimado += pedidoAtual.TempoGrelha
+	}
+	if pedidoAtual.TempoMontagem > 0 {
+		tempoEstimado += pedidoAtual.TempoMontagem
+	}
+	if pedidoAtual.TempoBebida > 0 {
+		tempoEstimado += pedidoAtual.TempoBebida
+	}
+
+	return tempoEstimado
+}
+
+
 func CancelarPedido(nomePedido string) {
 	for i := range Menu {
 		if Menu[i].Nome == nomePedido {
-			close(Menu[i].Cancelamento)  // Sinaliza o cancelamento
+			close(Menu[i].Cancelamento)
 			fmt.Printf("%sPedido %s foi cancelado.%s\n", Vermelho, nomePedido, Branco)
 			return
 		}

@@ -7,14 +7,16 @@ import (
 )
 
 type Pedido struct {
-	Nome              string
-	TempoCorte        time.Duration
-	TempoGrelha       time.Duration
-	TempoMontagem     time.Duration
-	TempoBebida       time.Duration
-	QuantidadeTarefas int
-	Cancelamento      chan struct{}
+    Nome              string
+    TempoCorte        time.Duration
+    TempoGrelha       time.Duration
+    TempoMontagem     time.Duration
+    TempoBebida       time.Duration
+    QuantidadeTarefas int
+    Cancelamento      chan struct{}
+    TempoEstimado     time.Duration
 }
+
 
 type Worker struct {
 	Nome    string
