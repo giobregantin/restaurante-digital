@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hsxflowers/restaurante-digital/workers"
+	"github.com/hsxflowers/restaurante-digital/internal/workers"
 )
 
-var Menu = []workers.Pedido{
+var Menu = []workers.Order{
 	{
 		Nome:          "Callback Burguer",
 		TempoCorte:    3 * time.Second,
@@ -66,93 +66,91 @@ func StartWorkers(wg *sync.WaitGroup) {
 	go workers.BebidaWorker.PrepararBebida(wg)
 }
 
-func DispatchPedidos(wg *sync.WaitGroup) {
-	for i, pedido := range Menu {
+func DispatchOrders(wg *sync.WaitGroup) {
+	for i, order := range Menu {
 		etapas := 0
 
-		if pedido.TempoCorte > 0 {
+		if order.TempoCorte > 0 {
 			etapas++
 		}
-		if pedido.TempoGrelha > 0 {
+		if order.TempoGrelha > 0 {
 			etapas++
 		}
-		if pedido.TempoMontagem > 0 {
+		if order.TempoMontagem > 0 {
 			etapas++
 		}
-		if pedido.TempoBebida > 0 {
+		if order.TempoBebida > 0 {
 			etapas++
 		}
 
 		tempoEstimado := CalcularTempoEstimado(i)
 
-		pedido.QuantidadeTarefas = etapas
-		pedido.TempoEstimado = tempoEstimado
-		Menu[i] = pedido
+		order.QuantidadeTarefas = etapas
+		order.TempoEstimado = tempoEstimado
+		Menu[i] = order
 
-		wg.Add(pedido.QuantidadeTarefas)
-		fmt.Printf("Novo pedido recebido: %s (Tempo estimado: %v)\n", pedido.Nome, pedido.TempoEstimado)
+		wg.Add(order.QuantidadeTarefas)
+		fmt.Printf("Novo order recebido: %s (Tempo estimado: %v)\n", order.Nome, order.TempoEstimado)
 
-		if pedido.TempoCorte > 0 {
-			workers.CortarWorker.Tarefas <- pedido
-		} else if pedido.TempoGrelha > 0 {
-			workers.GrelharWorker.Tarefas <- pedido
-		} else if pedido.TempoMontagem > 0 {
-			workers.MontarWorker.Tarefas <- pedido
-		} else if pedido.TempoBebida > 0 {
-			workers.BebidaWorker.Tarefas <- pedido
+		if order.TempoCorte > 0 {
+			workers.CortarWorker.Tarefas <- order
+		} else if order.TempoGrelha > 0 {
+			workers.GrelharWorker.Tarefas <- order
+		} else if order.TempoMontagem > 0 {
+			workers.MontarWorker.Tarefas <- order
+		} else if order.TempoBebida > 0 {
+			workers.BebidaWorker.Tarefas <- order
 		}
 	}
 }
-
 
 func CalcularTempoEstimado(index int) time.Duration {
 	tempoEstimado := time.Duration(0)
 
 	for j := 0; j < index; j++ {
-		pedidoAnterior := Menu[j]
-		pedidoAtual := Menu[index]
+		orderAnterior := Menu[j]
+		orderAtual := Menu[index]
 
-		if pedidoAnterior.TempoCorte > 0 && pedidoAtual.TempoCorte > 0 {
-			tempoEstimado += pedidoAnterior.TempoCorte
+		if orderAnterior.TempoCorte > 0 && orderAtual.TempoCorte > 0 {
+			tempoEstimado += orderAnterior.TempoCorte
 		}
-		if pedidoAnterior.TempoGrelha > 0 && pedidoAtual.TempoGrelha > 0 {
-			tempoEstimado += pedidoAnterior.TempoGrelha
+		if orderAnterior.TempoGrelha > 0 && orderAtual.TempoGrelha > 0 {
+			tempoEstimado += orderAnterior.TempoGrelha
 		}
-		if pedidoAnterior.TempoMontagem > 0 && pedidoAtual.TempoMontagem > 0 {
-			tempoEstimado += pedidoAnterior.TempoMontagem
+		if orderAnterior.TempoMontagem > 0 && orderAtual.TempoMontagem > 0 {
+			tempoEstimado += orderAnterior.TempoMontagem
 		}
-		if pedidoAnterior.TempoBebida > 0 && pedidoAtual.TempoBebida > 0 {
-			tempoEstimado += pedidoAnterior.TempoBebida
+		if orderAnterior.TempoBebida > 0 && orderAtual.TempoBebida > 0 {
+			tempoEstimado += orderAnterior.TempoBebida
 		}
 	}
 
-	pedidoAtual := Menu[index]
-	if pedidoAtual.TempoCorte > 0 {
-		tempoEstimado += pedidoAtual.TempoCorte
+	orderAtual := Menu[index]
+	if orderAtual.TempoCorte > 0 {
+		tempoEstimado += orderAtual.TempoCorte
 	}
-	if pedidoAtual.TempoGrelha > 0 {
-		tempoEstimado += pedidoAtual.TempoGrelha
+	if orderAtual.TempoGrelha > 0 {
+		tempoEstimado += orderAtual.TempoGrelha
 	}
-	if pedidoAtual.TempoMontagem > 0 {
-		tempoEstimado += pedidoAtual.TempoMontagem
+	if orderAtual.TempoMontagem > 0 {
+		tempoEstimado += orderAtual.TempoMontagem
 	}
-	if pedidoAtual.TempoBebida > 0 {
-		tempoEstimado += pedidoAtual.TempoBebida
+	if orderAtual.TempoBebida > 0 {
+		tempoEstimado += orderAtual.TempoBebida
 	}
 
 	return tempoEstimado
 }
 
-
-func CancelarPedido(nomePedido string) {
+func CancelarOrder(nomeOrder string) {
 	for i := range Menu {
-		if Menu[i].Nome == nomePedido {
+		if Menu[i].Nome == nomeOrder {
 			close(Menu[i].Cancelamento)
-			fmt.Printf("%sPedido %s foi cancelado.%s\n", Vermelho, nomePedido, Branco)
+			fmt.Printf("%sOrder %s foi cancelado.%s\n", Vermelho, nomeOrder, Branco)
 			return
 		}
 	}
-	fmt.Printf("%sPedido %s não encontrado.%s\n", Vermelho, nomePedido, Branco)
+	fmt.Printf("%sOrder %s não encontrado.%s\n", Vermelho, nomeOrder, Branco)
 }
 
 const (
@@ -163,4 +161,3 @@ const (
 	Rosa     = "\033[35m"
 	Ciana    = "\033[36m"
 )
-

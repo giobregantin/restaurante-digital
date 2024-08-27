@@ -11,11 +11,11 @@ func main() {
 	var wg sync.WaitGroup
 
 	process.StartWorkers(&wg)
-	process.DispatchPedidos(&wg)
+	process.DispatchOrders(&wg)
 
 	// time.Sleep(10 * time.Second)
-	// process.CancelarPedido("Crispy Turing")
+	// process.CancelarOrder("Crispy Turing")
 
 	wg.Wait()
-	fmt.Println("Todos os pedidos foram processados ou cancelados.")
+	fmt.Println("Todos os orders foram processados ou cancelados.")
 }
