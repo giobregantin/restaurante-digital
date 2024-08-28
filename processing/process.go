@@ -10,52 +10,34 @@ import (
 
 var Menu = []workers.Pedido{
 	{
-		Nome:          "Callback Burguer",
-		TempoCorte:    3 * time.Second,
-		TempoGrelha:   8 * time.Second,
-		TempoMontagem: 2 * time.Second,
-		TempoBebida:   0,
-		Cancelamento:  make(chan struct{}),
+		UsuarioId:    "123",
+		ItemId:       "a1b2c3d4",
+		Cancelamento: make(chan struct{}),
 	},
 	{
-		Nome:          "Null-Burguer",
-		TempoCorte:    4 * time.Second,
-		TempoGrelha:   7 * time.Second,
-		TempoMontagem: 2 * time.Second,
-		TempoBebida:   0,
-		Cancelamento:  make(chan struct{}),
+		UsuarioId:    "123",
+		ItemId:       "e5f6g7h8",
+		Cancelamento: make(chan struct{}),
 	},
 	{
-		Nome:          "Crispy Turing",
-		TempoCorte:    2 * time.Second,
-		TempoGrelha:   10 * time.Second,
-		TempoMontagem: 1 * time.Second,
-		TempoBebida:   0,
-		Cancelamento:  make(chan struct{}),
+		UsuarioId:    "456",
+		ItemId:       "i9j0k1l2",
+		Cancelamento: make(chan struct{}),
 	},
 	{
-		Nome:          "Mongo Melt",
-		TempoCorte:    1 * time.Second,
-		TempoGrelha:   3 * time.Second,
-		TempoMontagem: 0,
-		TempoBebida:   0,
-		Cancelamento:  make(chan struct{}),
+		UsuarioId:    "456",
+		ItemId:       "m3n4o5p6",
+		Cancelamento: make(chan struct{}),
 	},
 	{
-		Nome:          "Float Juice",
-		TempoCorte:    4 * time.Second,
-		TempoGrelha:   0,
-		TempoMontagem: 0,
-		TempoBebida:   3 * time.Second,
-		Cancelamento:  make(chan struct{}),
+		UsuarioId:    "789",
+		ItemId:       "q7r8s9t0",
+		Cancelamento: make(chan struct{}),
 	},
 	{
-		Nome:          "Async Berry",
-		TempoCorte:    2 * time.Second,
-		TempoGrelha:   0,
-		TempoMontagem: 0,
-		TempoBebida:   2 * time.Second,
-		Cancelamento:  make(chan struct{}),
+		UsuarioId:    "789",
+		ItemId:       "u1v2w3x4",
+		Cancelamento: make(chan struct{}),
 	},
 }
 
@@ -104,7 +86,6 @@ func DispatchPedidos(wg *sync.WaitGroup) {
 	}
 }
 
-
 func CalcularTempoEstimado(index int) time.Duration {
 	tempoEstimado := time.Duration(0)
 
@@ -143,7 +124,6 @@ func CalcularTempoEstimado(index int) time.Duration {
 	return tempoEstimado
 }
 
-
 func CancelarPedido(nomePedido string) {
 	for i := range Menu {
 		if Menu[i].Nome == nomePedido {
@@ -163,4 +143,3 @@ const (
 	Rosa     = "\033[35m"
 	Ciana    = "\033[36m"
 )
-

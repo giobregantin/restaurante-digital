@@ -7,16 +7,26 @@ import (
 )
 
 type Pedido struct {
-    Nome              string
-    TempoCorte        time.Duration
-    TempoGrelha       time.Duration
-    TempoMontagem     time.Duration
-    TempoBebida       time.Duration
-    QuantidadeTarefas int
-    Cancelamento      chan struct{}
-    TempoEstimado     time.Duration
+	UsuarioId         string
+	ItemId            string
+	Nome              string
+	TempoCorte        time.Duration
+	TempoGrelha       time.Duration
+	TempoMontagem     time.Duration
+	TempoBebida       time.Duration
+	QuantidadeTarefas int
+	Cancelamento      chan struct{}
+	TempoEstimado     time.Duration
 }
 
+type Item struct {
+	ItemId        string
+	Nome          string
+	TempoCorte    time.Duration
+	TempoGrelha   time.Duration
+	TempoMontagem time.Duration
+	TempoBebida   time.Duration
+}
 
 type Worker struct {
 	Nome    string
@@ -62,7 +72,7 @@ func (w *Worker) Grelhar(wg *sync.WaitGroup) {
 		select {
 		case <-pedido.Cancelamento:
 			fmt.Printf("[%s] %sPedido %s cancelado durante a grelha.%s\n", w.Nome, Vermelho, pedido.Nome, Branco)
-			for i := 0; i < pedido.QuantidadeTarefas - 1; i++ {
+			for i := 0; i < pedido.QuantidadeTarefas-1; i++ {
 				wg.Done()
 			}
 			continue
@@ -87,7 +97,7 @@ func (w *Worker) Montar(wg *sync.WaitGroup) {
 		select {
 		case <-pedido.Cancelamento:
 			fmt.Printf("[%s] %sPedido %s cancelado durante a montagem.%s\n", w.Nome, Vermelho, pedido.Nome, Branco)
-			for i := 0; i < pedido.QuantidadeTarefas - 2; i++ {
+			for i := 0; i < pedido.QuantidadeTarefas-2; i++ {
 				wg.Done()
 			}
 			continue
