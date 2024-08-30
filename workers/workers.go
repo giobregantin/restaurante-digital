@@ -26,6 +26,7 @@ type Item struct {
 	TempoGrelha   time.Duration
 	TempoMontagem time.Duration
 	TempoBebida   time.Duration
+	Valor         float64
 }
 
 type Worker struct {

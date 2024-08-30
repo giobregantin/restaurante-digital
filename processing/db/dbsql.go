@@ -6,6 +6,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/hsxflowers/restaurante-digital/workers"
+	"github.com/hsxflowers/restaurante-digital/exceptions"
 	"github.com/labstack/gommon/log"
 )
 
@@ -21,26 +22,24 @@ func NewSQLStore(db *sql.DB) *SQLStore {
 
 func (s *SQLStore) GetPedido(ctx context.Context, itemId string) (*workers.Item, error) {
 	var item workers.Item
-	var valor float64
 
 	query := `
 		SELECT item_id, nome, tempo_corte, tempo_grelha, tempo_montagem, tempo_bebida, valor
-		FROM pedido
+		FROM item
 		WHERE item_id = $1
 		ORDER BY RANDOM() LIMIT 1`
 
 	row := s.db.QueryRowContext(ctx, query, itemId)
 
-	err := row.Scan(&item.ItemId, &item.Nome, &item.TempoCorte, &item.TempoGrelha, &item.TempoMontagem, &item.TempoBebida, &valor)
+	err := row.Scan(&item.ItemId, &item.Nome, &item.TempoCorte, &item.TempoGrelha, &item.TempoMontagem, &item.TempoBebida, &item.Valor)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, exceptions.New(exceptions.ErrPedidoNotFound, err)
+			return nil, exceptions.New(exceptions.ErrOrderNotFound, err)
 		}
 		log.Error("Error fetching pedido from database: ", err)
 		return nil, exceptions.New(exceptions.ErrInternalServer, err)
 	}
 
-	item.Valor = valor
 	return &item, nil
 }
 
