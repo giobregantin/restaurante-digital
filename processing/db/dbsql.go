@@ -13,13 +13,18 @@ type SQLStore struct {
 	db *sql.DB
 }
 
+type CatDatabase interface {
+	CreatePedido(ctx context.Context, userID, itemID string, valor float64)
+	GetItem(ctx context.Context, itemId string) (*workers.Item, error)
+}
+
 func NewSQLStore(db *sql.DB) *SQLStore {
 	return &SQLStore{
 		db: db,
 	}
 }
 
-func (s *SQLStore) GetPedido(ctx context.Context, itemId string) (*workers.Item, error) {
+func (s *SQLStore) GetItem(ctx context.Context, itemId string) (*workers.Item, error) {
 	var item workers.Item
 	var valor float64
 

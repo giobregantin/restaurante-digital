@@ -5,8 +5,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hsxflowers/restaurante-digital/processing/db"
 	"github.com/hsxflowers/restaurante-digital/workers"
 )
+
+type Process struct {
+	Wg             *sync.WaitGroup
+	RestauranteeDb db.CatDatabase
+}
+
+func NewProcess(wg *sync.WaitGroup, restauranteeDb db.CatDatabase) domain.Service {
+	return &Process{
+		Wg:             wg,
+		RestauranteeDb: restauranteeDb,
+	}
+}
 
 var Menu = []workers.Pedido{
 	{
@@ -41,15 +54,16 @@ var Menu = []workers.Pedido{
 	},
 }
 
-func StartWorkers(wg *sync.WaitGroup) {
+func (p *Process) StartWorkers(wg *sync.WaitGroup) {
 	go workers.CortarWorker.Cortar(wg)
 	go workers.GrelharWorker.Grelhar(wg)
 	go workers.MontarWorker.Montar(wg)
 	go workers.BebidaWorker.PrepararBebida(wg)
 }
 
-func DispatchPedidos(wg *sync.WaitGroup) {
+func (p *Process) DispatchPedidos(wg *sync.WaitGroup) {
 	for i, pedido := range Menu {
+
 		etapas := 0
 
 		if pedido.TempoCorte > 0 {
