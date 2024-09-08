@@ -1,36 +1,29 @@
 package workers
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/hsxflowers/restaurante-digital/processing/db"
+	"github.com/hsxflowers/restaurante-digital/processing/domain"
 )
-
-type Pedido struct {
-    Nome              string
-    TempoCorte        time.Duration
-    TempoGrelha       time.Duration
-    TempoMontagem     time.Duration
-    TempoBebida       time.Duration
-    QuantidadeTarefas int
-    Cancelamento      chan struct{}
-    TempoEstimado     time.Duration
-}
-
 
 type Worker struct {
 	Nome    string
-	Tarefas chan Pedido
+	Tarefas chan *domain.Pedido
+	Context context.Context
 }
 
 var (
-	CortarWorker  = Worker{Nome: "Cortar", Tarefas: make(chan Pedido, 20)}
-	GrelharWorker = Worker{Nome: "Grelhar", Tarefas: make(chan Pedido, 20)}
-	MontarWorker  = Worker{Nome: "Montar", Tarefas: make(chan Pedido, 20)}
-	BebidaWorker  = Worker{Nome: "Bebida", Tarefas: make(chan Pedido, 20)}
+	CortarWorker  = Worker{Nome: "Cortar", Tarefas: make(chan *domain.Pedido, 20)}
+	GrelharWorker = Worker{Nome: "Grelhar", Tarefas: make(chan *domain.Pedido, 20)}
+	MontarWorker  = Worker{Nome: "Montar", Tarefas: make(chan *domain.Pedido, 20)}
+	BebidaWorker  = Worker{Nome: "Bebida", Tarefas: make(chan *domain.Pedido, 20)}
 )
 
-func (w *Worker) Cortar(wg *sync.WaitGroup) {
+func (w *Worker) Cortar(ctx context.Context, wg *sync.WaitGroup, db db.RestauranteDatabase) {
 	for pedido := range w.Tarefas {
 		select {
 		case <-pedido.Cancelamento:
@@ -51,18 +44,22 @@ func (w *Worker) Cortar(wg *sync.WaitGroup) {
 				BebidaWorker.Tarefas <- pedido
 			} else {
 				fmt.Printf("%sPedido %s finalizado com sucesso!%s\n", Rosa, pedido.Nome, Branco)
+				err := db.UpdatePedidoStatus(ctx, pedido.PedidoId, "Concluído")
+				if err != nil {
+					fmt.Printf("%sErro ao atualizar o status no banco de dados para o pedido com ID %s.%s\n", Vermelho, pedido.PedidoId, Branco)
+				}
 			}
 			wg.Done()
 		}
 	}
 }
 
-func (w *Worker) Grelhar(wg *sync.WaitGroup) {
+func (w *Worker) Grelhar(ctx context.Context, wg *sync.WaitGroup, db db.RestauranteDatabase) {
 	for pedido := range w.Tarefas {
 		select {
 		case <-pedido.Cancelamento:
 			fmt.Printf("[%s] %sPedido %s cancelado durante a grelha.%s\n", w.Nome, Vermelho, pedido.Nome, Branco)
-			for i := 0; i < pedido.QuantidadeTarefas - 1; i++ {
+			for i := 0; i < pedido.QuantidadeTarefas-1; i++ {
 				wg.Done()
 			}
 			continue
@@ -76,18 +73,22 @@ func (w *Worker) Grelhar(wg *sync.WaitGroup) {
 				BebidaWorker.Tarefas <- pedido
 			} else {
 				fmt.Printf("%sPedido %s finalizado com sucesso!%s\n", Rosa, pedido.Nome, Branco)
+				err := db.UpdatePedidoStatus(ctx, pedido.PedidoId, "Concluído")
+				if err != nil {
+					fmt.Printf("%sErro ao atualizar o status no banco de dados para o pedido com ID %s.%s\n", Vermelho, pedido.PedidoId, Branco)
+				}
 			}
 			wg.Done()
 		}
 	}
 }
 
-func (w *Worker) Montar(wg *sync.WaitGroup) {
+func (w *Worker) Montar(ctx context.Context, wg *sync.WaitGroup, db db.RestauranteDatabase) {
 	for pedido := range w.Tarefas {
 		select {
 		case <-pedido.Cancelamento:
 			fmt.Printf("[%s] %sPedido %s cancelado durante a montagem.%s\n", w.Nome, Vermelho, pedido.Nome, Branco)
-			for i := 0; i < pedido.QuantidadeTarefas - 2; i++ {
+			for i := 0; i < pedido.QuantidadeTarefas-2; i++ {
 				wg.Done()
 			}
 			continue
@@ -99,13 +100,17 @@ func (w *Worker) Montar(wg *sync.WaitGroup) {
 				BebidaWorker.Tarefas <- pedido
 			} else {
 				fmt.Printf("%sPedido %s finalizado com sucesso!%s\n", Rosa, pedido.Nome, Branco)
+				err := db.UpdatePedidoStatus(ctx, pedido.PedidoId, "Concluído")
+				if err != nil {
+					fmt.Printf("%sErro ao atualizar o status no banco de dados para o pedido com ID %s.%s\n", Vermelho, pedido.PedidoId, Branco)
+				}
 			}
 			wg.Done()
 		}
 	}
 }
 
-func (w *Worker) PrepararBebida(wg *sync.WaitGroup) {
+func (w *Worker) PrepararBebida(ctx context.Context, wg *sync.WaitGroup, db db.RestauranteDatabase) {
 	for pedido := range w.Tarefas {
 		select {
 		case <-pedido.Cancelamento:
@@ -117,6 +122,10 @@ func (w *Worker) PrepararBebida(wg *sync.WaitGroup) {
 			time.Sleep(pedido.TempoBebida)
 			fmt.Printf("[%s] %sConcluído a preparação da bebida para: %s%s\n", w.Nome, Verde, pedido.Nome, Branco)
 			fmt.Printf("%sPedido %s finalizado com sucesso!%s\n", Rosa, pedido.Nome, Branco)
+			err := db.UpdatePedidoStatus(ctx, pedido.PedidoId, "Concluído")
+			if err != nil {
+				fmt.Printf("%sErro ao atualizar o status no banco de dados para o pedido com ID %s.%s\n", Vermelho, pedido.PedidoId, Branco)
+			}
 			wg.Done()
 		}
 	}
