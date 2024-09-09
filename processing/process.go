@@ -30,39 +30,64 @@ var Menu = []*domain.Pedido{
 	{
 		PedidoId:     uuid.New().String(),
 		UsuarioId:    "123",
-		ItemId:       "a1b2c3d4",
+		ItemId:       "Callback Burguer",
 		Cancelamento: make(chan struct{}),
 	},
 	{
-		PedidoId:     "abcdfdg",
+		PedidoId:     "abcd",
 		UsuarioId:    "1234",
-		ItemId:       "e5f6g7h8",
+		ItemId:       "Null-Burguer",
 		Cancelamento: make(chan struct{}),
 	},
 	{
 		PedidoId:     uuid.New().String(),
 		UsuarioId:    "456",
-		ItemId:       "i9j0k1l2",
-		Cancelamento: make(chan struct{}),
-	},
-	{
-		PedidoId:     uuid.New().String(),
-		UsuarioId:    "456",
-		ItemId:       "m3n4o5p6",
-		Cancelamento: make(chan struct{}),
-	},
-	{
-		PedidoId:     uuid.New().String(),
-		UsuarioId:    "789",
-		ItemId:       "q7r8s9t0",
-		Cancelamento: make(chan struct{}),
-	},
-	{
-		PedidoId:     uuid.New().String(),
-		UsuarioId:    "789",
-		ItemId:       "u1v2w3x4",
+		ItemId:       "Crispy Turing",
 		Cancelamento: make(chan struct{}),
 		Prioridade: true,
+	},
+	{
+		PedidoId:     uuid.New().String(),
+		UsuarioId:    "456",
+		ItemId:       "Mongo Melt",
+		Cancelamento: make(chan struct{}),
+	},
+	{
+		PedidoId:     uuid.New().String(),
+		UsuarioId:    "789",
+		ItemId:       "Webwrap",
+		Cancelamento: make(chan struct{}),
+	},
+	{
+		PedidoId:     uuid.New().String(),
+		UsuarioId:    "789",
+		ItemId:       "NPM Nuggets",
+		Cancelamento: make(chan struct{}),
+		Prioridade: true,
+	},
+	{
+		PedidoId:     uuid.New().String(),
+		UsuarioId:    "789",
+		ItemId:       "Webwrap",
+		Cancelamento: make(chan struct{}),
+	},
+	{
+		PedidoId:     uuid.New().String(),
+		UsuarioId:    "1011",
+		ItemId:       "Float Juice",
+		Cancelamento: make(chan struct{}),
+	},
+	{
+		PedidoId:     uuid.New().String(),
+		UsuarioId:    "789",
+		ItemId:       "Array Apple",
+		Cancelamento: make(chan struct{}),
+	},
+	{
+		PedidoId:     uuid.New().String(),
+		UsuarioId:    "789",
+		ItemId:       "Async Berry",
+		Cancelamento: make(chan struct{}),
 	},
 }
 
@@ -226,6 +251,17 @@ func PedirConta(ctx context.Context, restauranteDb db.RestauranteDatabase, usuar
 	fmt.Println("=====================================================")
 }
 
+func DeletarPedidos(ctx context.Context, db db.RestauranteDatabase) error {
+
+	err := db.DeletarPedidos(ctx)
+	if err != nil {
+		fmt.Printf("%sErro ao reiniciar tabela pedido.%s\n", Vermelho, Branco)
+		return err
+	}
+	fmt.Printf("%sTabela pedido foi reiniciada.%s\n", Amarelo, Branco)
+	return nil
+
+}
 
 const (
 	Branco   = "\033[0m"
