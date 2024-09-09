@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	_ "github.com/lib/pq"
 
@@ -31,7 +32,11 @@ func main() {
 	processInstance.StartWorkers()
 	processInstance.DispatchPedidos(ctx)
 
-	process.CancelarPedido(ctx, "abc", restauranteDb)
+	usuario := "1234"
+
+	time.Sleep(20 * time.Second)
+	process.PedirConta(ctx, restauranteDb, usuario)
+	// process.CancelarPedido(ctx, "abcdfdg", restauranteDb)
 
 	wg.Wait()
 	fmt.Println("Todos os pedidos foram processados ou cancelados.")

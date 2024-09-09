@@ -12,8 +12,6 @@ import (
 	"github.com/hsxflowers/restaurante-digital/workers"
 )
 
-// TO-DO: Implementar lógica de status do pedido
-
 type Process struct {
 	Wg             *sync.WaitGroup
 	RestauranteeDb db.RestauranteDatabase
@@ -36,8 +34,8 @@ var Menu = []*domain.Pedido{
 		Cancelamento: make(chan struct{}),
 	},
 	{
-		PedidoId:     "abc",
-		UsuarioId:    "123",
+		PedidoId:     "abcdfdg",
+		UsuarioId:    "1234",
 		ItemId:       "e5f6g7h8",
 		Cancelamento: make(chan struct{}),
 	},
@@ -64,6 +62,7 @@ var Menu = []*domain.Pedido{
 		UsuarioId:    "789",
 		ItemId:       "u1v2w3x4",
 		Cancelamento: make(chan struct{}),
+		Prioridade: true,
 	},
 }
 
@@ -75,7 +74,20 @@ func (p *Process) StartWorkers() {
 }
 
 func (p *Process) DispatchPedidos(ctx context.Context) {
-	for i, pedido := range Menu {
+	prioritarios := []*domain.Pedido{}
+	naoPrioritarios := []*domain.Pedido{}
+
+	for _, pedido := range Menu {
+		if pedido.Prioridade {
+			prioritarios = append(prioritarios, pedido)
+		} else {
+			naoPrioritarios = append(naoPrioritarios, pedido)
+		}
+	}
+
+	ordemPedidos := append(prioritarios, naoPrioritarios...)
+
+	for i, pedido := range ordemPedidos {
 
 		item, err := p.RestauranteeDb.GetItem(ctx, pedido.ItemId)
 		if err != nil {
@@ -196,6 +208,24 @@ func CancelarPedido(ctx context.Context, pedidoId string, db db.RestauranteDatab
 	fmt.Printf("%sPedido com ID %s não encontrado.%s\n", Vermelho, pedidoId, Branco)
 	return fmt.Errorf("pedido com ID %s não encontrado", pedidoId)
 }
+
+func PedirConta(ctx context.Context, restauranteDb db.RestauranteDatabase, usuarioId string) {
+    pedidos, valorTotal, err := restauranteDb.GetPedidos(ctx, usuarioId)
+    if err != nil {
+        fmt.Printf("Erro ao obter a conta: %s\n", err)
+        return
+    }
+
+	fmt.Println("=====================================================")
+	fmt.Println("Conta do usuário:", usuarioId)
+    fmt.Println("Itens pedidos:")
+    for _, pedido := range pedidos {
+        fmt.Printf("- %s: R$ %.2f\n", pedido.Nome, pedido.Valor)
+    }
+    fmt.Printf("\nValor total: R$ %.2f\n", valorTotal)
+	fmt.Println("=====================================================")
+}
+
 
 const (
 	Branco   = "\033[0m"

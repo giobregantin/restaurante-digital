@@ -3,20 +3,22 @@ package domain
 import "time"
 
 type Pedido struct {
-	PedidoId          string
-	UsuarioId         string
-	ItemId            string
-	Nome              string
-	TempoCorte        time.Duration
-	TempoGrelha       time.Duration
-	TempoMontagem     time.Duration
-	TempoBebida       time.Duration
-	QuantidadeTarefas int
-	Cancelamento      chan struct{}
-	TempoEstimado     time.Duration
-	Status            string
-	Valor             float64
+    PedidoId       string
+    UsuarioId      string
+    ItemId         string
+    Cancelamento   chan struct{}
+    Nome           string
+    TempoCorte     time.Duration
+    TempoGrelha    time.Duration
+    TempoMontagem  time.Duration
+    TempoBebida    time.Duration
+    Valor          float64
+    Status         string
+    QuantidadeTarefas int
+    TempoEstimado  time.Duration
+    Prioridade     bool
 }
+
 
 type Item struct {
 	ItemId        string
@@ -26,4 +28,9 @@ type Item struct {
 	TempoMontagem time.Duration
 	TempoBebida   time.Duration
 	Valor         float64
+}
+
+type PedidoDetalhado struct {
+    Nome  string
+    Valor float64
 }

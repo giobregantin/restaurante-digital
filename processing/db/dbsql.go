@@ -28,6 +28,7 @@ type RestauranteDatabase interface {
 	GetItem(ctx context.Context, itemId string) (*domain.Item, error)
 	GetPedidosAnteriores(ctx context.Context, pedidoId string) ([]domain.Pedido, error)
 	UpdatePedidoStatus(ctx context.Context, pedidoId string, status string) error
+	GetPedidos(ctx context.Context, usuarioId string) ([]domain.PedidoDetalhado, float64, error) 
 }
 
 func (s *SQLStore) GetItem(ctx context.Context, itemId string) (*domain.Item, error) {
@@ -169,4 +170,67 @@ func (s *SQLStore) UpdatePedidoStatus(ctx context.Context, pedidoId string, stat
 		return exceptions.New(exceptions.ErrInternalServer, err)
 	}
 	return nil
+}
+
+func (s *SQLStore) GetPedidos(ctx context.Context, usuarioId string) ([]domain.PedidoDetalhado, float64, error) {
+    idsQuery := `
+    SELECT item_id
+    FROM pedido
+    WHERE user_id = $1 AND status != 'Cancelado'
+    `
+
+    rows, err := s.db.QueryContext(ctx, idsQuery, usuarioId)
+    if err != nil {
+        return nil, 0, fmt.Errorf("erro ao obter os IDs dos pedidos: %w", err)
+    }
+    defer rows.Close()
+
+    var ids []string
+    for rows.Next() {
+        var id string
+        if err := rows.Scan(&id); err != nil {
+            return nil, 0, fmt.Errorf("erro ao escanear o ID do pedido: %w", err)
+        }
+        ids = append(ids, id)
+    }
+
+    if err = rows.Err(); err != nil {
+        return nil, 0, fmt.Errorf("erro durante a iteração dos IDs: %w", err)
+    }
+
+    if len(ids) == 0 {
+        return nil, 0, nil
+    }
+
+    detalhesQuery := `
+    SELECT nome, valor
+    FROM item
+    WHERE item_id = ANY($1)
+    `
+
+    idsArray := "{" + strings.Join(ids, ",") + "}"
+
+    rows, err = s.db.QueryContext(ctx, detalhesQuery, idsArray)
+    if err != nil {
+        return nil, 0, fmt.Errorf("erro ao obter os detalhes dos pedidos: %w", err)
+    }
+    defer rows.Close()
+
+    var pedidosDetalhados []domain.PedidoDetalhado
+    var valorTotal float64
+
+    for rows.Next() {
+        var detalhe domain.PedidoDetalhado
+        if err := rows.Scan(&detalhe.Nome, &detalhe.Valor); err != nil {
+            return nil, 0, fmt.Errorf("erro ao escanear detalhes do pedido: %w", err)
+        }
+        pedidosDetalhados = append(pedidosDetalhados, detalhe)
+        valorTotal += detalhe.Valor
+    }
+
+    if err = rows.Err(); err != nil {
+        return nil, 0, fmt.Errorf("erro durante a iteração das linhas: %w", err)
+    }
+
+    return pedidosDetalhados, valorTotal, nil
 }
