@@ -21,7 +21,6 @@ type Pedido struct {
 
 
 type Item struct {
-	ItemId        string
 	Nome          string
 	TempoCorte    time.Duration
 	TempoGrelha   time.Duration

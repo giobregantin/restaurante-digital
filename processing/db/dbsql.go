@@ -29,25 +29,26 @@ type RestauranteDatabase interface {
 	GetPedidosAnteriores(ctx context.Context, pedidoId string) ([]domain.Pedido, error)
 	UpdatePedidoStatus(ctx context.Context, pedidoId string, status string) error
 	GetPedidos(ctx context.Context, usuarioId string) ([]domain.PedidoDetalhado, float64, error) 
+	DeletarPedidos(ctx context.Context) error
 }
 
-func (s *SQLStore) GetItem(ctx context.Context, itemId string) (*domain.Item, error) {
+func (s *SQLStore) GetItem(ctx context.Context, nome string) (*domain.Item, error) {
 	var item domain.Item
 
 	query := `
-		SELECT item_id, nome, tempo_corte, tempo_grelha, tempo_montagem, tempo_bebida, valor
+		SELECT nome, tempo_corte, tempo_grelha, tempo_montagem, tempo_bebida, valor
 		FROM item
-		WHERE item_id = $1`
+		WHERE nome = $1`
 
-	row := s.db.QueryRowContext(ctx, query, itemId)
+	row := s.db.QueryRowContext(ctx, query, nome)
 
 	var tempoCorteStr, tempoGrelhaStr, tempoMontagemStr, tempoBebidaStr string
-	err := row.Scan(&item.ItemId, &item.Nome, &tempoCorteStr, &tempoGrelhaStr, &tempoMontagemStr, &tempoBebidaStr, &item.Valor)
+	err := row.Scan(&item.Nome, &tempoCorteStr, &tempoGrelhaStr, &tempoMontagemStr, &tempoBebidaStr, &item.Valor)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, exceptions.New(exceptions.ErrOrderNotFound, err)
 		}
-		log.Error("Error fetching item from database: ", err)
+		log.Error("Erro ao buscar item no banco de dados: ", err)
 		return nil, exceptions.New(exceptions.ErrInternalServer, err)
 	}
 
@@ -78,7 +79,7 @@ func (s *SQLStore) GetItem(ctx context.Context, itemId string) (*domain.Item, er
 func parseInterval(hms string) (time.Duration, error) {
 	parts := strings.Split(hms, ":")
 	if len(parts) != 3 {
-		return 0, fmt.Errorf("invalid time format, expected hh:mm:ss: %s", hms)
+		return 0, fmt.Errorf("formato de tempo inválido, esperava hh:mm:ss: %s", hms)
 	}
 
 	hours := parts[0]
@@ -88,7 +89,7 @@ func parseInterval(hms string) (time.Duration, error) {
 	durationStr := fmt.Sprintf("%sh%sm%ss", hours, minutes, seconds)
 	duration, err := time.ParseDuration(durationStr)
 	if err != nil {
-		return 0, fmt.Errorf("error parsing duration: %w", err)
+		return 0, fmt.Errorf("erro ao parsear a duração: %w", err)
 	}
 
 	return duration, nil
@@ -117,17 +118,16 @@ func (s *SQLStore) GetPedidosAnteriores(ctx context.Context, pedidoId string) ([
 			&pedido.Valor,
 			&pedido.Status,
 		); err != nil {
-			log.Printf("Erro ao escanear o pedido: %v", err)
+			log.Printf("erro ao escanear o pedido: %v", err)
 			continue
 		}
 
 		item, err := s.GetItem(ctx, itemId)
 		if err != nil {
-			log.Printf("Erro ao buscar item no banco: %v", err)
+			log.Printf("erro ao buscar item no banco: %v", err)
 			continue
 		}
 
-		pedido.ItemId = itemId
 		pedido.Nome = item.Nome
 		pedido.TempoCorte = item.TempoCorte
 		pedido.TempoGrelha = item.TempoGrelha
@@ -151,7 +151,19 @@ func (s *SQLStore) CreatePedido(ctx context.Context, pedido *domain.Pedido) erro
 		pedido.PedidoId, pedido.UsuarioId, pedido.ItemId, pedido.Valor, pedido.Status,
 	)
 	if err != nil {
-		log.Error("Error creating pedido in database: ", err)
+		log.Error("erro ao criar pedido: ", err)
+		return exceptions.New(exceptions.ErrInternalServer, err)
+	}
+	return nil
+}
+
+func (s *SQLStore) DeletarPedidos(ctx context.Context) error {
+	_, err := s.db.ExecContext(ctx, `
+		TRUNCATE TABLE pedido
+		`,
+	)
+	if err != nil {
+		log.Error("erro ao limpae tabela pedido: ", err)
 		return exceptions.New(exceptions.ErrInternalServer, err)
 	}
 	return nil
@@ -166,7 +178,7 @@ func (s *SQLStore) UpdatePedidoStatus(ctx context.Context, pedidoId string, stat
 
 	_, err := s.db.ExecContext(ctx, query, status, pedidoId)
 	if err != nil {
-		log.Error("Error creating pedido in database: ", err)
+		log.Error("erro ao criar pedido: ", err)
 		return exceptions.New(exceptions.ErrInternalServer, err)
 	}
 	return nil
@@ -205,7 +217,7 @@ func (s *SQLStore) GetPedidos(ctx context.Context, usuarioId string) ([]domain.P
     detalhesQuery := `
     SELECT nome, valor
     FROM item
-    WHERE item_id = ANY($1)
+    WHERE nome = ANY($1)
     `
 
     idsArray := "{" + strings.Join(ids, ",") + "}"

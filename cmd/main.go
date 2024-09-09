@@ -33,10 +33,17 @@ func main() {
 	processInstance.DispatchPedidos(ctx)
 
 	usuario := "1234"
+	pedido := "abc"
 
-	time.Sleep(20 * time.Second)
+	// aqui você pode cancelar um pedido
+	process.CancelarPedido(ctx, pedido, restauranteDb)
+
+	time.Sleep(15 * time.Second)
+	// aqui você consegue pedir a conta do usuário desejado
 	process.PedirConta(ctx, restauranteDb, usuario)
-	// process.CancelarPedido(ctx, "abcdfdg", restauranteDb)
+
+	// aqui você consegue deletar todos os pedidos do restaurante para testar melhor o código
+	process.DeletarPedidos(ctx, restauranteDb)
 
 	wg.Wait()
 	fmt.Println("Todos os pedidos foram processados ou cancelados.")
